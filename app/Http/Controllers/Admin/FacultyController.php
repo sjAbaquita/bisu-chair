@@ -3,63 +3,79 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Faculty;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class FacultyController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return Inertia::render('Admin/Faculty/Index', [
+            'faculty' => Faculty::when(request('search'), fn($q) => $q->where('last_name', 'like', '%'.request('search').'%'))
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('Admin/Faculty/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'employee_no' => ['nullable', 'string', 'max:50', 'unique:faculty,employee_no'],
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'suffix' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'status' => ['required', 'string', 'in:active,inactive'],
+            'highest_degree_earned' => ['nullable', 'string', 'max:100'],
+            'specialization' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        Faculty::create($data);
+
+        return redirect()->route('admin.faculty.index')
+            ->with('success', 'Faculty member created.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit(Faculty $faculty)
     {
-        //
+        return Inertia::render('Admin/Faculty/Edit', [
+            'faculty' => $faculty,
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(Request $request, Faculty $faculty)
     {
-        //
+        $data = $request->validate([
+            'employee_no' => ['nullable', 'string', 'max:50', 'unique:faculty,employee_no,'.$faculty->id],
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'suffix' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'status' => ['required', 'string', 'in:active,inactive'],
+            'highest_degree_earned' => ['nullable', 'string', 'max:100'],
+            'specialization' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $faculty->update($data);
+
+        return redirect()->route('admin.faculty.index')
+            ->with('success', 'Faculty member updated.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(Faculty $faculty)
     {
-        //
-    }
+        $faculty->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('admin.faculty.index')
+            ->with('success', 'Faculty member deleted.');
     }
 }

@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable(['employee_no', 'first_name', 'middle_name', 'last_name', 'suffix', 'email', 'status', 'highest_degree_earned', 'specialization'])]
 class Faculty extends Model
 {
+    use HasFactory;
+
     protected $table = 'faculty';
 
     protected $fillable = [

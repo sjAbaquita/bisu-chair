@@ -3,63 +3,76 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Building;
+use App\Models\Campus;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class BuildingController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return Inertia::render('Admin/Building/Index', [
+            'buildings' => Building::when(request('search'), fn($q) => $q->where('name', 'like', '%'.request('search').'%'))
+                ->with('campus')
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        $campuses = Campus::where('is_active', true)->get(['id', 'name', 'code']);
+        return Inertia::render('Admin/Building/Create', [
+            'campuses' => $campuses,
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'campus_id' => ['required', 'exists:campuses,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:10', 'unique:buildings,code'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        Building::create($data);
+
+        return redirect()->route('admin.buildings.index')
+            ->with('success', 'Building created.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit(Building $building)
     {
-        //
+        $campuses = Campus::where('is_active', true)->get(['id', 'name', 'code']);
+        return Inertia::render('Admin/Building/Edit', [
+            'building' => $building->load('campus'),
+            'campuses' => $campuses,
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(Request $request, Building $building)
     {
-        //
+        $data = $request->validate([
+            'campus_id' => ['required', 'exists:campuses,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:10', 'unique:buildings,code,'.$building->id],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $building->update($data);
+
+        return redirect()->route('admin.buildings.index')
+            ->with('success', 'Building updated.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(Building $building)
     {
-        //
-    }
+        $building->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('admin.buildings.index')
+            ->with('success', 'Building deleted.');
     }
 }

@@ -3,63 +3,85 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicPeriod;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AcademicPeriodController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return Inertia::render('Admin/AcademicPeriod/Index', [
+            'periods' => AcademicPeriod::when(request('search'), fn($q) => $q->where('academic_year', 'like', '%'.request('search').'%'))
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('Admin/AcademicPeriod/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'academic_year' => ['required', 'string', 'max:20'],
+            'term' => ['required', 'string', 'max:50'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after:start_date'],
+            'status' => ['required', 'string', 'in:draft,open,locked,archived'],
+            'is_current' => ['required', 'boolean'],
+        ]);
+
+        // If setting as current, unset any other current periods
+        if ($data['is_current']) {
+            AcademicPeriod::where('is_current', true)->update(['is_current' => false]);
+        }
+
+        AcademicPeriod::create($data);
+
+        return redirect()->route('admin.academic_periods.index')
+            ->with('success', 'Academic period created.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit(AcademicPeriod $academicPeriod)
     {
-        //
+        return Inertia::render('Admin/AcademicPeriod/Edit', [
+            'period' => $academicPeriod,
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(Request $request, AcademicPeriod $academicPeriod)
     {
-        //
+        $data = $request->validate([
+            'academic_year' => ['required', 'string', 'max:20'],
+            'term' => ['required', 'string', 'max:50'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after:start_date'],
+            'status' => ['required', 'string', 'in:draft,open,locked,archived'],
+            'is_current' => ['required', 'boolean'],
+        ]);
+
+        // If setting as current, unset any other current periods
+        if ($data['is_current']) {
+            AcademicPeriod::where('is_current', true)
+                ->where('id', '!=', $academicPeriod->id)
+                ->update(['is_current' => false]);
+        }
+
+        $academicPeriod->update($data);
+
+        return redirect()->route('admin.academic_periods.index')
+            ->with('success', 'Academic period updated.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(AcademicPeriod $academicPeriod)
     {
-        //
-    }
+        $academicPeriod->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('admin.academic_periods.index')
+            ->with('success', 'Academic period deleted.');
     }
 }

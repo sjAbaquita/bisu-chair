@@ -3,63 +3,70 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\College;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CollegeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return Inertia::render('Admin/College/Index', [
+            'colleges' => College::when(request('search'), fn($q) => $q->where('name', 'like', '%'.request('search').'%'))
+                ->with('campus')
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('Admin/College/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'campus_id' => ['required', 'exists:campuses,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:10', 'unique:colleges,code'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        College::create($data);
+
+        return redirect()->route('admin.colleges.index')
+            ->with('success', 'College created.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit(College $college)
     {
-        //
+        return Inertia::render('Admin/College/Edit', [
+            'college' => $college->load('campus'),
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(Request $request, College $college)
     {
-        //
+        $data = $request->validate([
+            'campus_id' => ['required', 'exists:campuses,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:10', 'unique:colleges,code,'.$college->id],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $college->update($data);
+
+        return redirect()->route('admin.colleges.index')
+            ->with('success', 'College updated.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(College $college)
     {
-        //
-    }
+        $college->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('admin.colleges.index')
+            ->with('success', 'College deleted.');
     }
 }

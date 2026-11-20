@@ -3,63 +3,76 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\College;
+use App\Models\Department;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class DepartmentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return Inertia::render('Admin/Department/Index', [
+            'departments' => Department::when(request('search'), fn($q) => $q->where('name', 'like', '%'.request('search').'%'))
+                ->with('college')
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        $colleges = College::where('is_active', true)->get(['id', 'name', 'code']);
+        return Inertia::render('Admin/Department/Create', [
+            'colleges' => $colleges,
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'college_id' => ['required', 'exists:colleges,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:10', 'unique:departments,code'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        Department::create($data);
+
+        return redirect()->route('admin.departments.index')
+            ->with('success', 'Department created.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit(Department $department)
     {
-        //
+        $colleges = College::where('is_active', true)->get(['id', 'name', 'code']);
+        return Inertia::render('Admin/Department/Edit', [
+            'department' => $department->load('college'),
+            'colleges' => $colleges,
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(Request $request, Department $department)
     {
-        //
+        $data = $request->validate([
+            'college_id' => ['required', 'exists:colleges,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:10', 'unique:departments,code,'.$department->id],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $department->update($data);
+
+        return redirect()->route('admin.departments.index')
+            ->with('success', 'Department updated.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(Department $department)
     {
-        //
-    }
+        $department->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('admin.departments.index')
+            ->with('success', 'Department deleted.');
     }
 }
