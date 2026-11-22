@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClassMeeting extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'class_offering_id',
         'delivery_mode',
@@ -24,8 +28,8 @@ class ClassMeeting extends Model
 
     protected $casts = [
         'day_of_week' => 'integer',
-        'start_time' => 'time',
-        'end_time' => 'time',
+        'start_time' => 'string',
+        'end_time' => 'string',
         'effective_start_date' => 'date',
         'effective_end_date' => 'date',
     ];
@@ -65,8 +69,31 @@ class ClassMeeting extends Model
         return $this->delivery_mode === 'face_to_face';
     }
 
+    public function getStartTimeAttribute($value): ?Carbon
+    {
+        return $value ? Carbon::parse($value) : null;
+    }
+
+    public function getEndTimeAttribute($value): ?Carbon
+    {
+        return $value ? Carbon::parse($value) : null;
+    }
+
+    public function setStartTimeAttribute($value): void
+    {
+        $this->attributes['start_time'] = $value ? Carbon::parse($value)->format('H:i:s') : null;
+    }
+
+    public function setEndTimeAttribute($value): void
+    {
+        $this->attributes['end_time'] = $value ? Carbon::parse($value)->format('H:i:s') : null;
+    }
+
     public function isValidTimeRange(): bool
     {
+        if (!$this->start_time || !$this->end_time) {
+            return true; // No time range to validate
+        }
         return $this->end_time > $this->start_time;
     }
 

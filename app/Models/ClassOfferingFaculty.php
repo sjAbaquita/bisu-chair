@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ClassOfferingFaculty extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'class_offering_id',
         'faculty_id',

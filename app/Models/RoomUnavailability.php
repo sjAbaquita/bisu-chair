@@ -21,8 +21,7 @@ class RoomUnavailability extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'start_time' => 'time',
-        'end_time' => 'time',
+        // Note: start_time and end_time are stored as strings in time format
     ];
 
     public function room(): BelongsTo

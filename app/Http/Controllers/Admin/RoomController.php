@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicPeriod;
 use App\Models\Building;
+use App\Models\Campus;
 use App\Models\College;
 use App\Models\Room;
 use Illuminate\Http\Request;
@@ -19,6 +21,27 @@ class RoomController extends Controller
                 ->latest()
                 ->paginate(10)
                 ->withQueryString(),
+        ]);
+    }
+
+    public function indexUtilization()
+    {
+        $campuses = Campus::where('is_active', true)->get(['id', 'name', 'code']);
+        $buildings = Building::with('campus')->where('is_active', true)->get(['id', 'name', 'code', 'campus_id']);
+        $colleges = College::where('is_active', true)->get(['id', 'name', 'code', 'campus_id']);
+        $academicPeriods = AcademicPeriod::where('status', '!=', 'archived')->get(['id', 'academic_year', 'term', 'start_date', 'end_date', 'status']);
+
+        // Get rooms with their relationships
+        $rooms = Room::whereIn('status', ['available'])
+            ->with(['building.campus', 'college'])
+            ->get(['id', 'code', 'name', 'room_type', 'capacity', 'status', 'building_id', 'college_id']);
+
+        return Inertia::render('Admin/RoomUtilization/Index', [
+            'rooms' => $rooms,
+            'campuses' => $campuses,
+            'buildings' => $buildings,
+            'colleges' => $colleges,
+            'academicPeriods' => $academicPeriods,
         ]);
     }
 
